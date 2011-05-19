@@ -1,10 +1,40 @@
+;;; qtref.el --- An interface with Qt API reference on Emacs
+
+;; Copyright 2011 whitypig <whitypig@gmail.com>
+;;
+
+;; Author: whtiypig <whitypig@gmail.com>
+
+;; Keywords: C++, Qt
+;; X-URL: not distributed yet
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+;;;; Code
+
 (eval-when-compile
   (require 'cl))
 (require 'w3m)
 
+;;;; Customization
+
 (defcustom qtref-docroot "/usr/share/qt4/doc/html/"
   "Path to the actual root of document directory, should not be a
   symbolic link. Should be end with a slash.")
+
+;;;; Variables
 
 (defvar qtref-path-to-classes (concat qtref-docroot "classes.html"))
 (defvar qtref-path-to-funcs (concat qtref-docroot "functions.html"))
@@ -20,6 +50,8 @@
 
 (defvar qtref-funcnames (loop for e in qtref-funcname-alist
                               collect (car e)))
+
+;;;; Functions
 
 ;; (car alist) => (classname . url)
 (defun qtref-build-classname-alist (path)
@@ -73,6 +105,7 @@
   (completing-read "Class: " qtref-classnames nil t (thing-at-point 'symbol)))
 
 (defun qtref-read-funcname ()
+  (interactive)
   (completing-read "Function: " qtref-funcnames nil t (thing-at-point 'symbol)))
 
 (defun qtref-map-classname-to-url (classname)
@@ -88,7 +121,25 @@
     (when url
       (w3m-find-file url))))
 
-;; TODO implement
 (defun qtref-funcdoc ()
   (interactive)
-  (error "Not implemented yet"))
+  (let* ((pairs (cdr (assoc (qtref-read-funcname) qtref-funcname-alist)))
+         (url (and pairs (qtref-get-func-url pairs))))
+    (when url
+      (w3m-find-file url))))
+
+;; pairs => ((url1 . class1)) or ((url1 . class1) (url2 . class2))
+(defun qtref-get-func-url (pairs)
+  (let ((len (length pairs)))
+    (if (= len 1)
+        (concat qtref-docroot (caar pairs))
+      (concat qtref-docroot
+              (car (rassoc (qtref-select-func-classname (loop for e in pairs
+                                                              collect (cdr e)))
+                           pairs))))))
+
+(defun qtref-select-func-classname (names)
+  (completing-read "in class: " names nil t))
+
+(provide 'qtref)
+;;; qtref.el ends here
