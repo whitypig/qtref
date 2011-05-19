@@ -45,11 +45,15 @@
 (defvar qtref-funcname-alist (qtref-build-funcname-alist qtref-path-to-funcs)
   "Association list that maps a function name to one or more urls.")
 
-(defvar qtref-classnames (loop for e in qtref-classname-alist
-                               collect (car e)))
+(defvar qtref-classnames (and qtref-classname-alist
+                              (loop for e in qtref-classname-alist
+                                    collect (car e)))
+  "A list consisting of class names")
 
-(defvar qtref-funcnames (loop for e in qtref-funcname-alist
-                              collect (car e)))
+(defvar qtref-funcnames (and qtref-funcname-alist
+                             (loop for e in qtref-funcname-alist
+                                   collect (car e)))
+  "A list consisting of function names")
 
 ;;;; Functions
 
@@ -115,31 +119,59 @@
       (message "qtref: cannot find a html with a name of %s " classname)
       nil)))
 
+(defun qtref-visit-reference (path)
+  (when path
+    (let ((w (cond
+              ((get-buffer-window "*w3m*")
+               (get-buffer-window "*w3m*"))
+              ((one-window-p)
+               (split-window-vertically))
+              (t
+               (next-window)))))
+      (select-window w)
+      (w3m-find-file path))))
+
 (defun qtref-classdoc ()
   (interactive)
   (let ((url (qtref-map-classname-to-url (qtref-read-classname))))
     (when url
-      (w3m-find-file url))))
+      (qtref-visit-reference url))))
 
 (defun qtref-funcdoc ()
   (interactive)
-  (let* ((pairs (cdr (assoc (qtref-read-funcname) qtref-funcname-alist)))
-         (url (and pairs (qtref-get-func-url pairs))))
+  (let* ((fname (qtref-read-funcname))
+         (pairs (cdr (assoc fname qtref-funcname-alist)))
+         (url (and pairs (qtref-get-func-url fname pairs))))
     (when url
-      (w3m-find-file url))))
+      (qtref-visit-reference url))))
 
 ;; pairs => ((url1 . class1)) or ((url1 . class1) (url2 . class2))
-(defun qtref-get-func-url (pairs)
-  (let ((len (length pairs)))
-    (if (= len 1)
+(defun qtref-get-func-url (funcname pairs)
+    (if (= (length pairs) 1)
         (concat qtref-docroot (caar pairs))
       (concat qtref-docroot
-              (car (rassoc (qtref-select-func-classname (loop for e in pairs
-                                                              collect (cdr e)))
-                           pairs))))))
+              (car (rassoc (qtref-select-func-classname
+                            funcname
+                            (loop for e in pairs
+                                  collect (cdr e)))
+                           pairs)))))
 
-(defun qtref-select-func-classname (names)
-  (completing-read "in class: " names nil t))
+(defun qtref-select-func-classname (funcname names)
+  (completing-read (concat funcname " in class: ")
+                   names
+                   nil
+                   t
+                   (qtref-leading-common-part-string names)))
+
+(defun qtref-leading-common-part-string (lst)
+  "Return the leading equal-part among strings in LST"
+  (if (= (length lst) 1)
+      (car lst)
+    (reduce (lambda (s1 s2)
+              (substring-no-properties s1
+                                       0
+                                       (1- (abs (compare-strings s1 0 nil s2 0 nil)))))
+            lst)))
 
 (provide 'qtref)
 ;;; qtref.el ends here
