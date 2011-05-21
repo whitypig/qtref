@@ -1,12 +1,9 @@
 ;;; qtref.el --- An interface with Qt API reference on Emacs
 
-;; Copyright 2011 whitypig <whitypig@gmail.com>
-;;
+;; Copyright (C) 2011  whitypig
 
-;; Author: whtiypig <whitypig@gmail.com>
-
-;; Keywords: C++, Qt
-;; X-URL: not distributed yet
+;; Author: whitypig <whitypig@gmail.com>
+;; Keywords: convenience, languages, help
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,8 +18,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+;;; Commentary:
 
-;;;; Code
+;; 
+
+;;; Code:
 
 (eval-when-compile
   (require 'cl))
@@ -30,32 +30,59 @@
 
 ;;;; Customization
 
-(defcustom qtref-docroot "/usr/share/qt4/doc/html/"
+(defcustom qtref-docroot nil
   "Path to the actual root of document directory, should not be a
   symbolic link. Should be end with a slash.")
 
 ;;;; Variables
 
-(defvar qtref-path-to-classes (concat qtref-docroot "classes.html"))
-(defvar qtref-path-to-funcs (concat qtref-docroot "functions.html"))
+(defvar qtref-path-to-classes nil
+  "Absolute pathname to classes.html")
 
-(defvar qtref-classname-alist (qtref-build-classname-alist qtref-path-to-classes)
+(defvar qtref-path-to-funcs nil
+  "Absolute pathname to functions.html")
+
+(defvar qtref-classname-alist nil
   "Association list that maps a classname to an url.")
 
-(defvar qtref-funcname-alist (qtref-build-funcname-alist qtref-path-to-funcs)
+(defvar qtref-funcname-alist nil
   "Association list that maps a function name to one or more urls.")
 
-(defvar qtref-classnames (and qtref-classname-alist
-                              (loop for e in qtref-classname-alist
-                                    collect (car e)))
+(defvar qtref-classnames nil
   "A list consisting of class names")
 
-(defvar qtref-funcnames (and qtref-funcname-alist
-                             (loop for e in qtref-funcname-alist
-                                   collect (car e)))
+(defvar qtref-funcnames nil
   "A list consisting of function names")
 
 ;;;; Functions
+
+(defun qtref-setup ()
+  "Read document root directory from user, setting up paths, and
+build alists."
+  (interactive)
+  ;; read docroot from user input
+  (let* ((root (file-name-as-directory (read-directory-name "Path to document root: ")))
+         (classes (concat root "classes.html"))
+         (funcs (concat root "functions.html")))
+    (unless (and (file-readable-p classes)
+                 (file-readable-p funcs))
+      (error "qtref: sorry, you probably entered the wrong docroot directory."))
+    (setq qtref-docroot root
+          qtref-path-to-classes classes
+          qtref-path-to-funcs funcs)
+    (setq qtref-classname-alist (qtref-build-classname-alist qtref-path-to-classes)
+          qtref-funcname-alist (qtref-build-funcname-alist qtref-path-to-funcs))
+    (setq qtref-classnames (loop for e in qtref-classname-alist
+                                 collect (car e))
+          qtref-funcnames (loop for e in qtref-funcname-alist
+                                collect (car e)))))
+
+(defun qtref-reset()
+  (interactive)
+  (setq qtref-docroot        nil  qtref-path-to-classes nil
+        qtref-path-to-funcs  nil  qtref-classname-alist nil
+        qtref-funcname-alist nil  qtref-classnames      nil
+        qtref-funcnames      nil))
 
 ;; (car alist) => (classname . url)
 (defun qtref-build-classname-alist (path)
@@ -109,7 +136,6 @@
   (completing-read "Class: " qtref-classnames nil t (thing-at-point 'symbol)))
 
 (defun qtref-read-funcname ()
-  (interactive)
   (completing-read "Function: " qtref-funcnames nil t (thing-at-point 'symbol)))
 
 (defun qtref-map-classname-to-url (classname)
@@ -133,12 +159,16 @@
 
 (defun qtref-classdoc ()
   (interactive)
+  (unless qtref-docroot
+    (qtref-setup))
   (let ((url (qtref-map-classname-to-url (qtref-read-classname))))
     (when url
       (qtref-visit-reference url))))
 
 (defun qtref-funcdoc ()
   (interactive)
+  (unless qtref-docroot
+    (qtref-setup))
   (let* ((fname (qtref-read-funcname))
          (pairs (cdr (assoc fname qtref-funcname-alist)))
          (url (and pairs (qtref-get-func-url fname pairs))))
