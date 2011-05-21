@@ -3,7 +3,7 @@
 ;; Copyright (C) 2011  whitypig
 
 ;; Author: whitypig <whitypig@gmail.com>
-;; Keywords: convenience, languages, help
+;; Keywords: convenience, languages, help, Qt
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -37,10 +37,10 @@
 ;;;; Variables
 
 (defvar qtref-path-to-classes nil
-  "Absolute pathname to classes.html")
+  "Pathname to classes.html")
 
 (defvar qtref-path-to-funcs nil
-  "Absolute pathname to functions.html")
+  "Pathname to functions.html")
 
 (defvar qtref-classname-alist nil
   "Association list that maps a classname to an url.")
@@ -78,6 +78,7 @@ build alists."
                                 collect (car e)))))
 
 (defun qtref-reset()
+  "Reset all qtref variables to nil."
   (interactive)
   (setq qtref-docroot        nil  qtref-path-to-classes nil
         qtref-path-to-funcs  nil  qtref-classname-alist nil
