@@ -109,12 +109,12 @@ build alists."
   ;; read docroot from user input
   (let* ((root (or qtref-docroot
                    (file-name-as-directory (read-directory-name "Path to document root: "))))
-         (classes (concat root "classes.html"))
-         (funcs (concat root "functions.html")))
+         (classes (concat (file-name-as-directory root) "classes.html"))
+         (funcs (concat (file-name-as-directory root) "functions.html")))
     (unless (and (file-readable-p classes)
                  (file-readable-p funcs))
       (error "qtref: sorry, you probably entered the wrong docroot directory."))
-    (setq qtref-docroot root
+    (setq qtref-docroot (file-name-as-directory root)
           qtref-path-to-classes classes
           qtref-path-to-funcs funcs)
     (setq qtref-classname-alist (qtref-build-classname-alist qtref-path-to-classes)
