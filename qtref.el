@@ -20,7 +20,48 @@
 
 ;;; Commentary:
 
-;; 
+;; Prerequisites:
+;; To use qtref.el, you need to have w3m installed in your system.
+;; Also you need to get Qt API documentation and have it placed in
+;; your system.
+;;
+;; Installation:
+;; Just place qtref.el (this file) anywhere on your load path, and add
+;; the following to your emacs setting file:
+;; (require 'qtref)
+;;
+;; The first time qtref is called, it asks you in minibuffer about the root
+;; directory in which your Qt documentation resides. So please specify that
+;; diretory. In most Linux-like systems, it's probably
+;; /usr/share/qt4/doc/html or something like that.
+;;
+;; Alternatively, you could specify the root directory in your emacs setting file.
+;; Example:
+;; (require 'qtref)
+;; (setq qtref-docroot "/usr/share/qt4/doc/html")
+;;
+;; Choosing default behavior: Custom variable `qtref-default-behavior'
+;; determines the default searching behavior if you just hit Enter
+;; when asked in the minibuffer about which of class or function to
+;; search for. The default value is class, so if you want it to search
+;; for functions in the default mode, set this variable.
+;; Example:
+;; (setq qtref-default-behavior 'function)
+;;
+;; Usage scenario:
+;; M-x qtref [RET]
+;; [c]lass or [f]unction: f  ; searching for function doc
+;; Function: addToolBars [RET]
+;;
+;; Another case:
+;; M-x qtref [RET]
+;; [c]lass or [f]unction: c  ; searching for class doc
+;; Class: QWidget [RET]
+;;
+;; Finally, binding qtref to some key, for example \C-c\C-q, is a good
+;; idea, I think.
+;;
+;; I hope this will help. Thanks.
 
 ;;; Code:
 
@@ -66,7 +107,8 @@
 build alists."
   (interactive)
   ;; read docroot from user input
-  (let* ((root (file-name-as-directory (read-directory-name "Path to document root: ")))
+  (let* ((root (or qtref-docroot
+                   (file-name-as-directory (read-directory-name "Path to document root: "))))
          (classes (concat root "classes.html"))
          (funcs (concat root "functions.html")))
     (unless (and (file-readable-p classes)
@@ -164,25 +206,22 @@ build alists."
       (w3m-find-file path))))
 
 ;; User interactive functions
-(defun qtref ()
-  (interactive)
-  (let ((choice (downcase (read-from-minibuffer "[c]lass or [f]unction: "
-                                                nil))))
-    ;; default is searching for class doc
-    ;; better to make users customize
-    (cond ((string= choice "")
-           (if (eq qtref-default-behavior 'class)
-               (qtref-classdoc)
-             (qtref-funcdoc)))
-          ((string= choice "c")
-           (qtref-classdoc))
-          ((string= choice "f")
-           (qtref-funcdoc))
-          (t (error "qtref: you entered an invalid input")))))
+(defun qtref (choice)
+  (interactive "c[c]lass or [f]unction: ")
+  (cond ((or (char-equal choice ?\n)
+             (char-equal choice ?\r))
+         (if (eq qtref-default-behavior 'class)
+             (qtref-classdoc)
+           (qtref-funcdoc)))
+        ((char-equal choice ?c)
+         (qtref-classdoc))
+        ((char-equal choice ?f)
+         (qtref-funcdoc))
+        (t (error "qtref: you entered an invalid input"))))
 
 (defun qtref-classdoc ()
   (interactive)
-  (unless qtref-docroot
+  (unless (and qtref-funcnames qtref-classnames)
     (qtref-setup))
   (let ((url (qtref-map-classname-to-url (qtref-read-classname))))
     (when url
@@ -190,7 +229,7 @@ build alists."
 
 (defun qtref-funcdoc ()
   (interactive)
-  (unless qtref-docroot
+  (unless (and qtref-funcnames qtref-classnames)
     (qtref-setup))
   (let* ((fname (qtref-read-funcname))
          (pairs (cdr (assoc fname qtref-funcname-alist)))
