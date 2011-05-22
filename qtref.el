@@ -34,6 +34,11 @@
   "Path to the actual root of document directory, should not be a
   symbolic link. Should be end with a slash.")
 
+
+(defcustom qtref-default-behavior 'class
+  "Specify the default-search target when a user enters nothing
+  in minibuffer. Valid values are either class or function.")
+
 ;;;; Variables
 
 (defvar qtref-path-to-classes nil
@@ -157,6 +162,23 @@ build alists."
                (next-window)))))
       (select-window w)
       (w3m-find-file path))))
+
+;; User interactive functions
+(defun qtref ()
+  (interactive)
+  (let ((choice (downcase (read-from-minibuffer "[c]lass or [f]unction: "
+                                                nil))))
+    ;; default is searching for class doc
+    ;; better to make users customize
+    (cond ((string= choice "")
+           (if (eq qtref-default-behavior 'class)
+               (qtref-classdoc)
+             (qtref-funcdoc)))
+          ((string= choice "c")
+           (qtref-classdoc))
+          ((string= choice "f")
+           (qtref-funcdoc))
+          (t (error "qtref: you entered an invalid input")))))
 
 (defun qtref-classdoc ()
   (interactive)
