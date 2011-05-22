@@ -1,1 +1,45 @@
 This is an interface using w3m with Qt API documents.
+
+
+Prerequisites:
+To use qtref.el, you need to have w3m installed in your system.
+Also you need to get Qt API documentation and have it placed in
+your system.
+
+Installation:
+Just place qtref.el (this file) anywhere on your load path, and add
+the following to your emacs setting file:
+(require 'qtref)
+
+The first time qtref is called, it asks you in minibuffer about the root
+directory in which your Qt documentation resides. So please specify that
+diretory. In most Linux-like systems, it's probably
+/usr/share/qt4/doc/html or something like that.
+
+Alternatively, you could specify the root directory in your emacs setting file.
+Example:
+(require 'qtref)
+(setq qtref-docroot "/usr/share/qt4/doc/html")
+
+Choosing default behavior: Custom variable `qtref-default-behavior'
+determines the default searching behavior if you just hit Enter
+when asked in the minibuffer about which of class or function to
+search for. The default value is class, so if you want it to search
+for functions in the default mode, set this variable.
+Example:
+(setq qtref-default-behavior 'function)
+
+Usage scenario:
+M-x qtref [RET]
+[c]lass or [f]unction: f  ; searching for function doc
+Function: addToolBars [RET]
+
+Another case:
+M-x qtref [RET]
+[c]lass or [f]unction: c  ; searching for class doc
+Class: QWidget [RET]
+
+Finally, binding qtref to some key, for example \C-c\C-q, is a good
+idea, I think.
+
+I hope this will help. Thanks.
