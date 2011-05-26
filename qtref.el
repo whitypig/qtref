@@ -193,7 +193,7 @@ build alists."
       (message "qtref: cannot find a html with a name of %s " classname)
       nil)))
 
-(defun qtref-visit-reference (path)
+(defun* qtref-visit-reference (path &key (kind nil))
   (when path
     (let ((w (cond
               ((get-buffer-window "*w3m*")
@@ -203,7 +203,9 @@ build alists."
               (t
                (next-window)))))
       (select-window w)
-      (w3m-find-file path))))
+      (w3m-find-file path)
+      (when (eq kind 'class)
+        (search-forward "Contents" nil t)))))
 
 ;; User interactive functions
 (defun qtref (choice)
@@ -225,7 +227,7 @@ build alists."
     (qtref-setup))
   (let ((url (qtref-map-classname-to-url (qtref-read-classname))))
     (when url
-      (qtref-visit-reference url))))
+      (qtref-visit-reference url :kind 'class))))
 
 (defun qtref-funcdoc ()
   (interactive)
@@ -235,7 +237,7 @@ build alists."
          (pairs (cdr (assoc fname qtref-funcname-alist)))
          (url (and pairs (qtref-get-func-url fname pairs))))
     (when url
-      (qtref-visit-reference url))))
+      (qtref-visit-reference url :kind 'function))))
 
 ;; pairs => ((url1 . class1)) or ((url1 . class1) (url2 . class2))
 (defun qtref-get-func-url (funcname pairs)
